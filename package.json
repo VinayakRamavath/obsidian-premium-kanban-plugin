@@ -1,0 +1,61 @@
+{
+	"name": "premium-kanban",
+	"version": "0.2.2",
+	"description": "A polished, Markdown-native Kanban view for Obsidian Bases.",
+	"type": "module",
+	"main": "main.js",
+	"scripts": {
+		"dev": "node esbuild.config.mjs",
+		"dev:setup": "node scripts/setup-dev-vault.mjs",
+		"build": "tsc --noEmit && node esbuild.config.mjs production && node scripts/verify-release.mjs",
+		"lint": "eslint .",
+		"format": "prettier --write .",
+		"format:check": "prettier --check .",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"test:interaction": "playwright test",
+		"fixtures:load": "node scripts/generate-load-fixtures.mjs",
+		"check": "npm run lint && npm run format:check && npm test && npm run build"
+	},
+	"keywords": [
+		"obsidian",
+		"bases",
+		"kanban",
+		"tasks"
+	],
+	"author": "Vinayak Ramavath",
+	"license": "MIT",
+	"engines": {
+		"node": ">=20"
+	},
+	"dependencies": {
+		"@dnd-kit/core": "^6.3.1",
+		"@dnd-kit/utilities": "^3.2.2",
+		"fractional-indexing": "^4.0.0",
+		"gsap": "^3.15.0",
+		"react": "^19.2.0",
+		"react-dom": "^19.2.0",
+		"zustand": "^5.0.8"
+	},
+	"devDependencies": {
+		"@playwright/test": "^1.55.0",
+		"@eslint/js": "^10.0.1",
+		"@testing-library/jest-dom": "^6.8.0",
+		"@testing-library/react": "^16.3.0",
+		"@types/node": "^24.0.0",
+		"@types/react": "^19.2.0",
+		"@types/react-dom": "^19.2.0",
+		"builtin-modules": "^3.3.0",
+		"esbuild": "^0.25.0",
+		"eslint": "^10.8.0",
+		"globals": "^16.0.0",
+		"jiti": "^2.6.1",
+		"jsdom": "^26.1.0",
+		"obsidian": "^1.13.1",
+		"prettier": "^3.6.0",
+		"typescript": "^5.9.0",
+		"typescript-eslint": "^8.65.0",
+		"vite": "^7.0.0",
+		"vitest": "^4.0.0"
+	}
+}

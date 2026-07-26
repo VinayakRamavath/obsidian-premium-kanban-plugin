@@ -1,0 +1,7 @@
+main.js
+node_modules
+coverage
+playwright-report
+test-results
+dev-vault/.obsidian/plugins
+dev-vault

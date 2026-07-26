@@ -1,0 +1,169 @@
+# Premium Kanban
+
+Premium Kanban is an Obsidian community plugin prototype that renders Obsidian Bases results
+as a polished, task-focused Kanban board. Markdown files and frontmatter remain the source of
+truth.
+
+![Premium Kanban running in the disposable Obsidian development vault](docs/images/premium-kanban-dev-vault.png)
+
+This repository currently implements the interaction-quality proof only:
+
+- Registers the custom Bases view type `premium-kanban`.
+- Uses the Base's filters, grouping, property order, sorting, and `columnOrder`.
+- Renders filename-based task cards with the selected Base properties.
+- Moves cards between Status columns with pointer, trackpad, basic touch, and keyboard sensors.
+- Uses dnd-kit for drag geometry and GSAP Flip for card displacement, drop, and rollback motion.
+- Creates tasks directly in a Status column using the Base's file-creation rules.
+- Adds empty Status columns and reorders columns with a dedicated drag handle.
+- Persists independent per-view card ordering with fractional rank strings in the `.base` view.
+- Provides configurable Status-column accents.
+- Updates only the `Status` frontmatter key through `FileManager.processFrontMatter()`.
+- Optimistically updates the board, serializes writes per file, and rolls back failed writes.
+- Reconciles edits, renames, deletions, and other vault changes through `BasesView.onDataUpdated()`.
+
+No task database, sync service, frontmatter rank property, drawer, advanced filtering, or AI feature is
+included.
+
+## Quick start
+
+```bash
+git clone git@github.com:VinayakRamavath/obsidian-premium-kanban-plugin.git
+cd obsidian-premium-kanban-plugin
+npm install
+npm run dev:setup
+npm run build
+```
+
+Then:
+
+1. Open the repository's `dev-vault/` folder as a vault in Obsidian.
+2. Open **Settings → Community plugins**, turn off Restricted mode if prompted, and enable
+   **Premium Kanban**.
+3. Make sure the **Bases** core plugin is enabled.
+4. Open `Bases/Empty Project/Empty Project Todos.base`.
+5. Select **Premium Kanban** from the Base view-layout menu.
+
+After rebuilding, use Obsidian's **Reload app without saving** command or disable and re-enable the
+plugin to load the latest JavaScript. Installing the optional Hot Reload plugin removes this manual
+reload step during development.
+
+## Requirements
+
+- Obsidian 1.10.0 or newer with the Bases core plugin enabled
+- Node.js 20 or newer for development
+- npm
+
+## Development vault
+
+The repository contains a disposable vault at `dev-vault/`. Its task titles, links, external IDs,
+and body content are synthetic. It includes all supported Status values, empty and linked Project
+values, TickTick metadata, agent metadata, incomplete frontmatter, and deliberately unexpected
+property types.
+
+Set up the plugin link and build it:
+
+```bash
+npm install
+npm run dev:setup
+npm run dev
+```
+
+Open `dev-vault/` in Obsidian, enable community plugins, and enable **Premium Kanban**. Open
+`Bases/Empty Project/Empty Project Todos.base` and select the **Premium Kanban** view.
+
+For automatic reloads, install and enable
+[pjeby/hot-reload](https://github.com/pjeby/hot-reload) in the development vault. The setup command
+links the repository into `.obsidian/plugins/premium-kanban`, so changes to `main.js` or
+`styles.css` reload immediately.
+
+Generate an untracked synthetic load-test set when profiling:
+
+```bash
+npm run fixtures:load -- --count 500
+```
+
+The generated files are placed under `dev-vault/todos/__load-test/`.
+
+## Build and test
+
+```bash
+npm run lint
+npm run format:check
+npm test
+npx playwright install chromium
+npm run test:interaction
+npm run build
+```
+
+`npm run build` type-checks the project, creates a minified `main.js`, and verifies the three
+Obsidian release artifacts:
+
+- `main.js`
+- `manifest.json`
+- `styles.css`
+
+The Playwright harness uses the production React board, dnd-kit sensors, GSAP animation code, and
+a controlled fake mutation service. It verifies pointer dragging, optimistic placement,
+successful reconciliation, and animated failure rollback without needing to automate Obsidian
+itself.
+
+## Install in another vault
+
+Run `npm run build`, then create:
+
+```text
+<vault>/.obsidian/plugins/premium-kanban/
+```
+
+Copy `main.js`, `manifest.json`, and `styles.css` into that directory. Restart Obsidian or reload
+the app, then enable **Premium Kanban** under **Settings → Community plugins**.
+
+In a Base view, choose **Premium Kanban** as the layout and configure **Group by → Status**.
+`columnOrder` may be a comma-separated string such as:
+
+```yaml
+columnOrder: Today,In Progress,Inbox,Not Started,Backlog,Completed
+```
+
+## Data-safety behavior
+
+The public Bases API supplies grouped results but does not expose a typed group-property getter.
+Before enabling dragging, the adapter checks every `note.*` property against every returned group.
+Mutation is enabled only when exactly one property reproduces the grouping and that property is
+`note.Status`. An ambiguous or unsupported grouping remains visible but read-only.
+
+Dropping a card:
+
+1. Updates the board immediately.
+2. Queues a Status-only frontmatter mutation for that file.
+3. Keeps the newest optimistic state while stale Bases updates arrive.
+4. Reconciles to the Base's configured sort when the confirmed update arrives.
+5. Restores the source Status and shows an Obsidian notice if the write fails.
+
+In-column ranks, column order, and column colors are stored only in the individual view
+configuration as `cardRanks`, `columnOrder`, and `columnColors`. A task can therefore have a
+different position in another Base view without adding frontmatter. Selecting the colored accent
+beside a column title opens its preset/custom color picker.
+
+Disabling or uninstalling the plugin leaves all notes, frontmatter, and `.base` files usable
+without migration or export.
+
+## Interaction-quality review
+
+Before expanding the product scope, compare this view directly with the native Bases Kanban using
+the disposable vault:
+
+- Pointer tracking should remain attached to the cursor.
+- Nearby cards should make space without abrupt jumps.
+- Column widths should remain stable.
+- The destination should remain visually explicit.
+- Markdown persistence must not block the drop animation.
+- External note changes should update the affected card without remounting the board.
+- A 500-card synthetic board should remain responsive during ordinary dragging.
+
+Proceed to premium controls and the task workspace only if card movement and scanning feel
+materially better than the native view.
+
+## License
+
+MIT

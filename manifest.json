@@ -1,0 +1,9 @@
+{
+	"id": "premium-kanban",
+	"name": "Premium Kanban",
+	"version": "0.2.2",
+	"minAppVersion": "1.10.0",
+	"description": "A polished, Markdown-native Kanban view for Obsidian Bases.",
+	"author": "Vinayak Ramavath",
+	"isDesktopOnly": false
+}

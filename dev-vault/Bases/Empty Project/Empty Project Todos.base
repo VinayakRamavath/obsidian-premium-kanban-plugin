@@ -1,0 +1,26 @@
+filters:
+  and:
+    - file.inFolder("todos")
+views:
+  - type: premium-kanban
+    name: Premium Kanban
+    groupBy:
+      property: Status
+      direction: DESC
+    order:
+      - file.name
+      - Project
+      - source
+      - Due
+    columnOrder: Today,In Progress,Inbox,Not Started,Backlog,Completed
+    cardRanks: '{"todos/Triage imported inbox task.md":"a0","todos/Partial frontmatter task.md":"a1","todos/Plan the weekly review.md":"a2","todos/Review project notes.md":"a3","todos/Explore a later enhancement.md":"a4","todos/Archive the completed sample.md":"a5"}'
+    columnColors: '{"Today":"#d97706","In Progress":"#7c5ce7","Inbox":"#168aad","Not Started":"#3b82f6","Backlog":"#d97706","Completed":"#16a068"}'
+  - type: table
+    name: Fixture table
+    groupBy:
+      property: Status
+      direction: DESC
+    order:
+      - file.name
+      - Project
+      - source
