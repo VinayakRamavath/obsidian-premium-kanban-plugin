@@ -28,6 +28,6 @@
   "audio-recorder": false,
   "workspaces": false,
   "publish": false,
-  "sync": true,
+  "sync": false,
   "webviewer": false
 }

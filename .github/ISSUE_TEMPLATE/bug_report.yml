@@ -1,0 +1,98 @@
+name: Bug report
+description: Report reproducible incorrect behavior using synthetic or redacted vault data.
+title: '[Bug]: '
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem. Never attach a private vault, access token, or unredacted personal task data.
+
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Premium Kanban version
+      placeholder: '0.2.2'
+    validations:
+      required: true
+
+  - type: input
+    id: obsidian-version
+    attributes:
+      label: Obsidian version
+      placeholder: '1.10.0'
+    validations:
+      required: true
+
+  - type: input
+    id: operating-system
+    attributes:
+      label: Operating system
+      placeholder: 'Ubuntu 24.04, Windows 11, macOS 15, Android, or iOS'
+    validations:
+      required: true
+
+  - type: dropdown
+    id: input-method
+    attributes:
+      label: Input method
+      options:
+        - Mouse
+        - Trackpad
+        - Keyboard
+        - Touch
+        - Not interaction-related
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the incorrect behavior and its effect on Markdown or the board.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Use the included development vault or a minimal synthetic example where possible.
+      placeholder: |
+        1. Open ...
+        2. Drag ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: base-config
+    attributes:
+      label: Relevant Base configuration
+      description: Paste only a minimal, sanitized view configuration.
+      render: yaml
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Console errors
+      description: Paste sanitized errors or stack traces if available.
+      render: shell
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Safety confirmation
+      options:
+        - label: I removed private vault content, credentials, external IDs, and personal links.
+          required: true
+        - label: I reproduced this on the latest published Premium Kanban release.
+          required: true

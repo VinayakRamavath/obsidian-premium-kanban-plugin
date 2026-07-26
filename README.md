@@ -1,10 +1,18 @@
 # Premium Kanban
 
+[![CI](https://github.com/VinayakRamavath/obsidian-premium-kanban-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/VinayakRamavath/obsidian-premium-kanban-plugin/actions/workflows/ci.yml)
+[![GitHub release](https://img.shields.io/github/v/release/VinayakRamavath/obsidian-premium-kanban-plugin)](https://github.com/VinayakRamavath/obsidian-premium-kanban-plugin/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 Premium Kanban is an Obsidian community plugin prototype that renders Obsidian Bases results
 as a polished, task-focused Kanban board. Markdown files and frontmatter remain the source of
 truth.
 
 ![Premium Kanban running in the disposable Obsidian development vault](docs/images/premium-kanban-dev-vault.png)
+
+> [!WARNING]
+> Premium Kanban is a public alpha that writes task Status values and per-view configuration.
+> Test it with a copied or backed-up vault before relying on it for daily work.
 
 This repository currently implements the interaction-quality proof only:
 
@@ -24,14 +32,50 @@ This repository currently implements the interaction-quality proof only:
 No task database, sync service, frontmatter rank property, drawer, advanced filtering, or AI feature is
 included.
 
-## Quick start
+## Install
+
+### BRAT
+
+[BRAT](https://github.com/TfTHacker/obsidian42-brat) is the simplest way to install and update the
+public alpha:
+
+1. Install and enable **BRAT** in Obsidian.
+2. Run **BRAT: Add a beta plugin for testing** from the command palette.
+3. Enter
+   `https://github.com/VinayakRamavath/obsidian-premium-kanban-plugin`.
+4. Enable **Premium Kanban** under **Settings → Community plugins**.
+
+### Manual installation
+
+1. Open the
+   [latest GitHub release](https://github.com/VinayakRamavath/obsidian-premium-kanban-plugin/releases/latest).
+2. Download `main.js`, `manifest.json`, and `styles.css`.
+3. Create `<vault>/.obsidian/plugins/premium-kanban/`.
+4. Copy the three downloaded files into that directory.
+5. Reload Obsidian and enable **Premium Kanban** under **Settings → Community plugins**.
+
+The plugin requires Obsidian 1.10.0 or newer with the Bases core plugin enabled.
+
+## Configure a Base
+
+Open a `.base` file, add or select a view, and choose **Premium Kanban** as its layout. Configure
+**Group by → Status**. `columnOrder` may be a comma-separated string such as:
+
+```yaml
+columnOrder: Today,In Progress,Inbox,Not Started,Backlog,Completed
+```
+
+The development vault includes a working example at
+`Bases/Empty Project/Empty Project Todos.base`.
+
+## Develop from source
 
 ```bash
-git clone git@github.com:VinayakRamavath/obsidian-premium-kanban-plugin.git
+git clone https://github.com/VinayakRamavath/obsidian-premium-kanban-plugin.git
 cd obsidian-premium-kanban-plugin
 npm install
 npm run dev:setup
-npm run build
+npm run dev
 ```
 
 Then:
@@ -43,9 +87,9 @@ Then:
 4. Open `Bases/Empty Project/Empty Project Todos.base`.
 5. Select **Premium Kanban** from the Base view-layout menu.
 
-After rebuilding, use Obsidian's **Reload app without saving** command or disable and re-enable the
-plugin to load the latest JavaScript. Installing the optional Hot Reload plugin removes this manual
-reload step during development.
+After a rebuild, use Obsidian's **Reload app without saving** command or disable and re-enable the
+plugin to load the latest JavaScript. Installing the optional Hot Reload plugin removes this
+manual reload step during development.
 
 ## Requirements
 
@@ -107,24 +151,6 @@ a controlled fake mutation service. It verifies pointer dragging, optimistic pla
 successful reconciliation, and animated failure rollback without needing to automate Obsidian
 itself.
 
-## Install in another vault
-
-Run `npm run build`, then create:
-
-```text
-<vault>/.obsidian/plugins/premium-kanban/
-```
-
-Copy `main.js`, `manifest.json`, and `styles.css` into that directory. Restart Obsidian or reload
-the app, then enable **Premium Kanban** under **Settings → Community plugins**.
-
-In a Base view, choose **Premium Kanban** as the layout and configure **Group by → Status**.
-`columnOrder` may be a comma-separated string such as:
-
-```yaml
-columnOrder: Today,In Progress,Inbox,Not Started,Backlog,Completed
-```
-
 ## Data-safety behavior
 
 The public Bases API supplies grouped results but does not expose a typed group-property getter.
@@ -148,6 +174,19 @@ beside a column title opens its preset/custom color picker.
 Disabling or uninstalling the plugin leaves all notes, frontmatter, and `.base` files usable
 without migration or export.
 
+## Privacy and security
+
+Premium Kanban has no telemetry, accounts, cloud service, or plugin-initiated network requests.
+See [PRIVACY.md](PRIVACY.md) for the complete current behavior.
+
+Please report suspected security or data-loss vulnerabilities privately as described in
+[SECURITY.md](SECURITY.md). Do not post private vault data in a GitHub issue.
+
+## Contributing
+
+Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before starting a
+large change. Bug reports should use synthetic or redacted vault data.
+
 ## Interaction-quality review
 
 Before expanding the product scope, compare this view directly with the native Bases Kanban using
@@ -166,4 +205,5 @@ materially better than the native view.
 
 ## License
 
-MIT
+Premium Kanban's original project code is available under the [MIT License](LICENSE). Bundled
+dependencies retain their respective terms; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

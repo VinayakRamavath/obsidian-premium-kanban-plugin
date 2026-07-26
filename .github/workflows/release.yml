@@ -1,0 +1,47 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build GitHub release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify release tag
+        run: npm run release:check-tag
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+
+      - name: Run quality checks and build
+        run: npm run check
+
+      - name: Publish GitHub release
+        run: >-
+          gh release create "$RELEASE_TAG"
+          main.js manifest.json styles.css LICENSE THIRD_PARTY_NOTICES.md
+          --generate-notes
+          --title "Premium Kanban $RELEASE_TAG"
+          --verify-tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}

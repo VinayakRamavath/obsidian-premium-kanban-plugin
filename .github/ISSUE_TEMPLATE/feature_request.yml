@@ -1,0 +1,41 @@
+name: Feature request
+description: Propose a focused improvement to the Markdown-native Kanban experience.
+title: '[Feature]: '
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Premium Kanban is currently focused on a polished Bases Kanban and task workspace. Cloud sync, collaboration, accounts, proprietary task storage, and general Obsidian replacement features are out of scope.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What task-management or board interaction is difficult today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the user interaction and expected Markdown or `.base` changes.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+
+  - type: checkboxes
+    id: data-model
+    attributes:
+      label: Data compatibility
+      options:
+        - label: The proposal keeps Markdown/frontmatter as the source of truth.
+          required: true
+        - label: Disabling the plugin would leave task data usable.
+          required: true
