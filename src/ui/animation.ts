@@ -67,46 +67,7 @@ export function animateColumnChange(container: HTMLElement | null, update: () =>
 	activeAnimations.add(animation);
 }
 
-export function animateDrop(overlay: HTMLElement | null, target: HTMLElement | null): void {
-	if (!overlay || !target || prefersReducedMotion()) return;
-
-	const from = overlay.getBoundingClientRect();
-	const to = target.getBoundingClientRect();
-	const clone = overlay.cloneNode(true) as HTMLElement;
-	clone.classList.add('premium-kanban-drop-clone');
-	Object.assign(clone.style, {
-		height: `${from.height}px`,
-		left: `${from.left}px`,
-		margin: '0',
-		pointerEvents: 'none',
-		position: 'fixed',
-		top: `${from.top}px`,
-		width: `${from.width}px`,
-		zIndex: '10000',
-	});
-	document.body.appendChild(clone);
-
-	const animation = gsap.to(clone, {
-		duration: 0.2,
-		ease: 'power2.out',
-		height: to.height,
-		left: to.left,
-		opacity: 0.45,
-		scale: 0.98,
-		top: to.top,
-		width: to.width,
-		onComplete: () => {
-			clone.remove();
-			activeAnimations.delete(animation);
-		},
-	});
-	activeAnimations.add(animation);
-}
-
 export function killBoardAnimations(): void {
 	for (const animation of activeAnimations) animation.kill();
 	activeAnimations.clear();
-	for (const clone of Array.from(document.querySelectorAll('.premium-kanban-drop-clone'))) {
-		clone.remove();
-	}
 }

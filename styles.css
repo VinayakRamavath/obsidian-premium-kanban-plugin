@@ -214,18 +214,20 @@
 }
 
 .premium-kanban-card.is-dragging {
-	background: color-mix(in srgb, var(--background-primary) 68%, transparent);
-	border-color: color-mix(in srgb, var(--interactive-accent) 30%, transparent);
-	opacity: 0.3;
+	visibility: hidden;
 }
 
-.premium-kanban-card.is-overlay,
-.premium-kanban-drop-clone .premium-kanban-card {
+.premium-kanban-drag-overlay {
+	pointer-events: none;
+	will-change: transform;
+}
+
+.premium-kanban-card.is-overlay {
 	border-color: color-mix(in srgb, var(--interactive-accent) 54%, transparent);
 	box-shadow: var(--pk-shadow-drag);
 	cursor: grabbing;
 	opacity: 0.98;
-	transform: rotate(0.7deg) scale(1.015);
+	transform: scale(1.01);
 }
 
 .premium-kanban-card.is-pending::after {

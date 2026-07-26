@@ -13,7 +13,6 @@ import { createBoardStore } from '../board/board-state';
 import { ObsidianMutationService } from '../mutations/mutation-service';
 import { PremiumKanbanBoard } from '../ui/board';
 import { killBoardAnimations } from '../ui/animation';
-import { rankCardAtCurrentPosition, serializeCardRanks } from '../board/ranking';
 import { COLOR_PALETTE, parseColumnColors, serializeColors } from '../board/color-config';
 
 export const PREMIUM_KANBAN_VIEW_TYPE = 'premium-kanban';
@@ -38,12 +37,6 @@ export class PremiumKanbanBasesView extends BasesView {
 				mutationService={this.mutationService}
 				onAddCard={(columnId) => this.promptForTask(columnId)}
 				onAddColumn={() => this.promptForColumn()}
-				onCardRankChange={(cardId, board) => {
-					this.config.set(
-						'cardRanks',
-						serializeCardRanks(rankCardAtCurrentPosition(board, cardId)),
-					);
-				}}
 				onColumnOrderChange={(labels) => {
 					this.config.set('columnOrder', labels.join(','));
 				}}

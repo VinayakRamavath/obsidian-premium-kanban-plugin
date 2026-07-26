@@ -30,13 +30,6 @@ function getViewOptions(): BasesAllOptions[] {
 			shouldHide: () => true,
 		},
 		{
-			key: 'cardRanks',
-			displayName: 'Card ranks',
-			type: 'text',
-			default: '',
-			shouldHide: () => true,
-		},
-		{
 			key: 'columnColors',
 			displayName: 'Column colors',
 			type: 'text',

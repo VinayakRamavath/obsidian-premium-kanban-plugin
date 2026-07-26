@@ -42,7 +42,6 @@ const initialSnapshot: BoardSnapshot = {
 			mtime: 1,
 			columnId: 'status:Today',
 			status: 'Today',
-			rank: null,
 			fields: [{ id: 'note.source', label: 'Source', value: 'fixture' }],
 		},
 		'todos/Beta.md': {
@@ -52,7 +51,6 @@ const initialSnapshot: BoardSnapshot = {
 			mtime: 1,
 			columnId: 'status:In%20Progress',
 			status: 'In Progress',
-			rank: null,
 			fields: [],
 		},
 	},
@@ -71,7 +69,6 @@ const mutationService: MutationService = {
 				store.getState().confirmed,
 				intent.filePath,
 				intent.toColumnId,
-				Number.MAX_SAFE_INTEGER,
 			);
 			const card = confirmed.cards[intent.filePath];
 			if (card) card.mtime = 2;
@@ -95,9 +92,6 @@ createRoot(rootElement).render(
 			}}
 			onAddColumn={() => {
 				document.body.dataset.addColumn = 'true';
-			}}
-			onCardRankChange={(cardId) => {
-				document.body.dataset.rankedCard = cardId;
 			}}
 			onColumnOrderChange={(labels) => {
 				document.body.dataset.columnOrder = labels.join(',');

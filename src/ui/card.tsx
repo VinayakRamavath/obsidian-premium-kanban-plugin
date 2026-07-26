@@ -51,20 +51,19 @@ export function CardVisual({
 interface BoardCardProps {
 	card: BoardCardModel;
 	columnId: string;
-	index: number;
 	isDragging: boolean;
 	pending: boolean;
 	onOpen: (path: string, event: React.MouseEvent) => void;
 }
 
-export function BoardCard({ card, columnId, index, isDragging, pending, onOpen }: BoardCardProps) {
+export function BoardCard({ card, columnId, isDragging, pending, onOpen }: BoardCardProps) {
 	const draggable = useDraggable({
 		id: `card:${card.id}`,
-		data: { cardId: card.id, columnId, index, type: 'card' },
+		data: { cardId: card.id, columnId, type: 'card' },
 	});
 	const droppable = useDroppable({
 		id: `drop-card:${card.id}`,
-		data: { cardId: card.id, columnId, index, type: 'card' },
+		data: { cardId: card.id, columnId, type: 'card' },
 	});
 	const setNodeRef = useCombinedRefs(draggable.setNodeRef, droppable.setNodeRef);
 

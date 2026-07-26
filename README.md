@@ -20,10 +20,10 @@ This repository currently implements the interaction-quality proof only:
 - Uses the Base's filters, grouping, property order, sorting, and `columnOrder`.
 - Renders filename-based task cards with the selected Base properties.
 - Moves cards between Status columns with pointer, trackpad, basic touch, and keyboard sensors.
-- Uses dnd-kit for drag geometry and GSAP Flip for card displacement, drop, and rollback motion.
+- Uses dnd-kit for drag geometry and GSAP Flip for card displacement and rollback motion.
 - Creates tasks directly in a Status column using the Base's file-creation rules.
 - Adds empty Status columns and reorders columns with a dedicated drag handle.
-- Persists independent per-view card ordering with fractional rank strings in the `.base` view.
+- Keeps cards in the order produced by the Base's configured sort.
 - Provides configurable Status-column accents.
 - Updates only the `Status` frontmatter key through `FileManager.processFrontMatter()`.
 - Optimistically updates the board, serializes writes per file, and rolls back failed writes.
@@ -166,10 +166,10 @@ Dropping a card:
 4. Reconciles to the Base's configured sort when the confirmed update arrives.
 5. Restores the source Status and shows an Obsidian notice if the write fails.
 
-In-column ranks, column order, and column colors are stored only in the individual view
-configuration as `cardRanks`, `columnOrder`, and `columnColors`. A task can therefore have a
-different position in another Base view without adding frontmatter. Selecting the colored accent
-beside a column title opens its preset/custom color picker.
+Cards always follow the individual Base view's configured sort and can only be dragged between
+Status columns. Column order and column colors are stored in the view configuration as
+`columnOrder` and `columnColors`. Selecting the colored accent beside a column title opens its
+preset/custom color picker.
 
 Disabling or uninstalling the plugin leaves all notes, frontmatter, and `.base` files usable
 without migration or export.
@@ -196,7 +196,7 @@ the disposable vault:
 - Nearby cards should make space without abrupt jumps.
 - Column widths should remain stable.
 - The destination should remain visually explicit.
-- Markdown persistence must not block the drop animation.
+- Markdown persistence must not interrupt pointer tracking or the destination transition.
 - External note changes should update the affected card without remounting the board.
 - A 500-card synthetic board should remain responsive during ordinary dragging.
 
@@ -205,5 +205,5 @@ materially better than the native view.
 
 ## License
 
-Premium Kanban's original project code is available under the [MIT License](LICENSE). Bundled
+Premium Kanban is open-source software available under the [MIT License](LICENSE). Bundled
 dependencies retain their respective terms; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

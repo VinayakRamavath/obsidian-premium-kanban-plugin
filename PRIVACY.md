@@ -9,8 +9,8 @@ Markdown metadata needed to render cards. Current write operations are limited t
 
 - The grouped task property, currently `Status`, when a card moves.
 - New Markdown task files created through Obsidian's file APIs.
-- Per-view Kanban configuration such as column order, card ranks, and column colors in the
-  corresponding `.base` file.
+- Per-view Kanban configuration such as column order and column colors in the corresponding
+  `.base` file.
 
 ## Network and telemetry
 

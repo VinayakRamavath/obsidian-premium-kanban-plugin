@@ -8,7 +8,6 @@ const bundledPackages = [
 	'@dnd-kit/accessibility',
 	'@dnd-kit/core',
 	'@dnd-kit/utilities',
-	'fractional-indexing',
 	'gsap',
 	'react',
 	'react-dom',

@@ -33,7 +33,6 @@ function snapshot(status: 'Today' | 'In Progress', mtime = 1): BoardSnapshot {
 				mtime,
 				columnId: status === 'Today' ? 'status:Today' : 'status:In%20Progress',
 				status,
-				rank: null,
 				fields: [],
 			},
 		},
@@ -46,10 +45,10 @@ describe('board state', () => {
 		const store = createBoardStore(snapshot('Today'));
 
 		store.getState().startDrag('todos/Task.md');
-		store.getState().previewMove('todos/Task.md', 'status:In%20Progress', 0);
+		store.getState().previewMove('todos/Task.md', 'status:In%20Progress');
 		const intent = store.getState().commitDrag();
 
-		expect(intent?.statusIntent?.toValue).toBe('In Progress');
+		expect(intent?.toValue).toBe('In Progress');
 		expect(store.getState().board.cards['todos/Task.md']?.status).toBe('In Progress');
 		expect(store.getState().pendingMoves['todos/Task.md']?.phase).toBe('writing');
 
@@ -66,7 +65,7 @@ describe('board state', () => {
 		const store = createBoardStore(snapshot('Today'));
 
 		store.getState().startDrag('todos/Task.md');
-		store.getState().previewMove('todos/Task.md', 'status:In%20Progress', 0);
+		store.getState().previewMove('todos/Task.md', 'status:In%20Progress');
 		store.getState().commitDrag();
 		store.getState().markMutationFailed('todos/Task.md', 'operation-2');
 
@@ -80,13 +79,38 @@ describe('board state', () => {
 		const store = createBoardStore(snapshot('Today'));
 
 		store.getState().startDrag('todos/Task.md');
-		store.getState().previewMove('todos/Task.md', 'status:In%20Progress', 0);
+		store.getState().previewMove('todos/Task.md', 'status:In%20Progress');
 		store.getState().commitDrag();
 		store.getState().applySnapshot(snapshot('Today', 1));
 
 		expect(store.getState().board.cards['todos/Task.md']?.status).toBe('In Progress');
 		expect(store.getState().pendingMoves['todos/Task.md']).toBeDefined();
 		vi.unstubAllGlobals();
+	});
+
+	it('ignores attempts to reorder cards within a column', () => {
+		const initial = snapshot('Today');
+		initial.columns[0]?.cardIds.push('todos/Other.md');
+		initial.cards['todos/Other.md'] = {
+			id: 'todos/Other.md',
+			path: 'todos/Other.md',
+			title: 'Other',
+			mtime: 1,
+			columnId: 'status:Today',
+			status: 'Today',
+			fields: [],
+		};
+		const store = createBoardStore(initial);
+
+		store.getState().startDrag('todos/Task.md');
+		store.getState().previewMove('todos/Task.md', 'status:Today');
+
+		expect(store.getState().commitDrag()).toBeNull();
+		expect(store.getState().board.columns[0]?.cardIds).toEqual([
+			'todos/Task.md',
+			'todos/Other.md',
+		]);
+		expect(store.getState().pendingMoves).toEqual({});
 	});
 
 	it('reuses unchanged cards and columns across Bases snapshots', () => {

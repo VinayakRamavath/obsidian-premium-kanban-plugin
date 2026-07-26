@@ -59,6 +59,7 @@ export const BoardColumn = memo(function BoardColumn({
 					aria-label={`Configure ${column.label} color`}
 					className="premium-kanban-column-dot"
 					onClick={() => onConfigureColumnColor(column.id)}
+					style={{ backgroundColor: column.color }}
 					type="button"
 				/>
 				<h3>{column.label}</h3>
@@ -77,12 +78,11 @@ export const BoardColumn = memo(function BoardColumn({
 				data-column-drop-zone
 				ref={droppable.setNodeRef}
 			>
-				{column.cardIds.map((cardId, index) => {
+				{column.cardIds.map((cardId) => {
 					return (
 						<ConnectedBoardCard
 							cardId={cardId}
 							columnId={column.id}
-							index={index}
 							key={cardId}
 							onOpen={onOpenCard}
 							store={store}
@@ -100,7 +100,6 @@ export const BoardColumn = memo(function BoardColumn({
 interface ConnectedBoardCardProps {
 	cardId: string;
 	columnId: string;
-	index: number;
 	store: StoreApi<BoardStoreState>;
 	onOpen: (path: string, event: React.MouseEvent) => void;
 }
@@ -108,7 +107,6 @@ interface ConnectedBoardCardProps {
 const ConnectedBoardCard = memo(function ConnectedBoardCard({
 	cardId,
 	columnId,
-	index,
 	store,
 	onOpen,
 }: ConnectedBoardCardProps) {
@@ -121,7 +119,6 @@ const ConnectedBoardCard = memo(function ConnectedBoardCard({
 		<BoardCard
 			card={card}
 			columnId={columnId}
-			index={index}
 			isDragging={isDragging}
 			onOpen={onOpen}
 			pending={pending}

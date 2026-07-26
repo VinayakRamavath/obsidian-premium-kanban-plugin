@@ -15,7 +15,6 @@ export interface BoardCard {
 	mtime: number;
 	columnId: string;
 	status: string | null;
-	rank: string | null;
 	fields: BoardField[];
 }
 
@@ -64,18 +63,9 @@ export interface PendingMove extends MoveIntent {
 export interface ActiveDrag {
 	cardId: string;
 	sourceColumnId: string;
-	sourceIndex: number;
 }
 
 export interface ActiveColumnDrag {
 	columnId: string;
 	sourceIndex: number;
-}
-
-export interface CardDropCommit {
-	cardId: string;
-	fromColumnId: string;
-	toColumnId: string;
-	toIndex: number;
-	statusIntent: MoveIntent | null;
 }

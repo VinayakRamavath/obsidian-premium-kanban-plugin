@@ -13,7 +13,6 @@ import {
 	type BoardSnapshot,
 	type GroupProperty,
 } from '../model/types';
-import { parseCardRanks } from '../board/ranking';
 import { defaultColumnColor, parseColumnColors, type ColumnColors } from '../board/color-config';
 
 export interface BasesAdapterInput {
@@ -99,7 +98,6 @@ function groupToColumn(
 	order: BasesPropertyId[],
 	config: BasesAdapterInput['config'],
 	cards: Record<string, BoardCard>,
-	cardRanks: Record<string, string>,
 	columnColors: ColumnColors,
 ): BoardColumn {
 	const value = valueToScalar(group.key);
@@ -116,7 +114,6 @@ function groupToColumn(
 			mtime: entry.file.stat.mtime,
 			columnId: id,
 			status: value,
-			rank: cardRanks[cardId] ?? null,
 			fields: buildFields(entry, order, config),
 		};
 	}
@@ -137,22 +134,11 @@ export function normalizeBasesData({
 	revision,
 }: BasesAdapterInput): BoardSnapshot {
 	const cards: Record<string, BoardCard> = {};
-	const cardRanks = parseCardRanks(config.get('cardRanks'));
 	const columnColors = parseColumnColors(config.get('columnColors'));
 	const visibleOrder = config.getOrder();
 	const returnedColumns = data.groupedData.map((group) =>
-		groupToColumn(group, visibleOrder, config, cards, cardRanks, columnColors),
+		groupToColumn(group, visibleOrder, config, cards, columnColors),
 	);
-	for (const column of returnedColumns) {
-		column.cardIds.sort((leftId, rightId) => {
-			const leftRank = cards[leftId]?.rank;
-			const rightRank = cards[rightId]?.rank;
-			if (leftRank && rightRank) return leftRank.localeCompare(rightRank);
-			if (leftRank) return -1;
-			if (rightRank) return 1;
-			return 0;
-		});
-	}
 	const returnedByLabel = new Map(returnedColumns.map((column) => [column.label, column]));
 	const columns: BoardColumn[] = [];
 

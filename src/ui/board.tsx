@@ -12,14 +12,14 @@ import {
 	type DragEndEvent,
 	type DragOverEvent,
 	type DragStartEvent,
+	type Modifier,
 } from '@dnd-kit/core';
 import { useMemo, useRef } from 'react';
 import { useStore } from 'zustand';
 import type { StoreApi } from 'zustand/vanilla';
 import type { BoardStoreState } from '../board/board-state';
-import type { BoardSnapshot } from '../model/types';
 import type { MutationService } from '../mutations/mutation-service';
-import { animateBoardChange, animateColumnChange, animateDrop } from './animation';
+import { animateBoardChange, animateColumnChange } from './animation';
 import { CardVisual } from './card';
 import { BoardColumn } from './column';
 
@@ -30,7 +30,6 @@ interface PremiumKanbanBoardProps {
 	onError: (message: string) => void;
 	onAddCard: (columnId: string) => void;
 	onAddColumn: () => void;
-	onCardRankChange: (cardId: string, board: BoardSnapshot) => void;
 	onColumnOrderChange: (labels: string[]) => void;
 	onConfigureColumnColor: (columnId: string) => void;
 }
@@ -40,21 +39,55 @@ const collisionDetection: CollisionDetection = (args) => {
 	return pointerHits.length > 0 ? pointerHits : closestCenter(args);
 };
 
-function targetFromEvent(event: DragOverEvent): { columnId: string; index: number } | null {
+function activatorCoordinates(event: Event | null): { x: number; y: number } | null {
+	if (!event) return null;
+	const pointer = event as Event & { clientX?: unknown; clientY?: unknown };
+	if (typeof pointer.clientX === 'number' && typeof pointer.clientY === 'number') {
+		return { x: pointer.clientX, y: pointer.clientY };
+	}
+
+	const touch =
+		(
+			event as Event & {
+				touches?: ArrayLike<{ clientX: number; clientY: number }>;
+				changedTouches?: ArrayLike<{ clientX: number; clientY: number }>;
+			}
+		).touches?.[0] ??
+		(
+			event as Event & {
+				changedTouches?: ArrayLike<{ clientX: number; clientY: number }>;
+			}
+		).changedTouches?.[0];
+	return touch ? { x: touch.clientX, y: touch.clientY } : null;
+}
+
+const placeOverlayBelowPointer: Modifier = ({
+	activatorEvent,
+	active,
+	activeNodeRect,
+	overlayNodeRect,
+	transform,
+}) => {
+	if (active?.data.current?.type !== 'card') return transform;
+	const pointer = activatorCoordinates(activatorEvent);
+	if (!pointer || !activeNodeRect) return transform;
+
+	const overlayWidth = overlayNodeRect?.width ?? activeNodeRect.width;
+	return {
+		...transform,
+		x: transform.x + pointer.x - activeNodeRect.left - overlayWidth / 2,
+		y: transform.y + pointer.y - activeNodeRect.top + 12,
+	};
+};
+
+const dragOverlayModifiers = [placeOverlayBelowPointer];
+
+function targetColumnFromEvent(event: DragOverEvent): string | null {
 	const over = event.over;
 	if (!over) return null;
 	const data = over.data.current;
 	if (!data || typeof data.columnId !== 'string') return null;
-
-	if (data.type === 'column') {
-		return { columnId: data.columnId, index: Number.MAX_SAFE_INTEGER };
-	}
-
-	const baseIndex = typeof data.index === 'number' ? data.index : 0;
-	const translated = event.active.rect.current.translated;
-	const activeCenter = translated ? translated.top + translated.height / 2 : 0;
-	const after = activeCenter > over.rect.top + over.rect.height / 2;
-	return { columnId: data.columnId, index: baseIndex + (after ? 1 : 0) };
+	return data.columnId;
 }
 
 export function PremiumKanbanBoard({
@@ -64,7 +97,6 @@ export function PremiumKanbanBoard({
 	onError,
 	onAddCard,
 	onAddColumn,
-	onCardRankChange,
 	onColumnOrderChange,
 	onConfigureColumnColor,
 }: PremiumKanbanBoardProps) {
@@ -116,20 +148,19 @@ export function PremiumKanbanBoard({
 			return;
 		}
 		const cardId = event.active.data.current?.cardId;
-		const target = targetFromEvent(event);
-		if (typeof cardId !== 'string' || !target) return;
+		const targetColumnId = targetColumnFromEvent(event);
+		if (typeof cardId !== 'string' || !targetColumnId) return;
 
 		const current = store.getState();
 		const card = current.board.cards[cardId];
-		if (!card) return;
-		const previewKey = `${target.columnId}:${target.index}`;
-		if (lastPreview.current === previewKey) return;
-		lastPreview.current = previewKey;
+		if (!card || card.columnId === targetColumnId) return;
+		if (lastPreview.current === targetColumnId) return;
+		lastPreview.current = targetColumnId;
 
 		animateBoardChange(
 			boardElement.current,
-			[card.columnId, target.columnId],
-			() => store.getState().previewMove(cardId, target.columnId, target.index),
+			[card.columnId, targetColumnId],
+			() => store.getState().previewMove(cardId, targetColumnId),
 			'move',
 		);
 	};
@@ -147,19 +178,9 @@ export function PremiumKanbanBoard({
 		const cardBeforeCommit = before.board.cards[active.cardId];
 		const sourceColumnId = active.sourceColumnId;
 		const targetColumnId = cardBeforeCommit?.columnId ?? sourceColumnId;
-		const overlay = document.querySelector<HTMLElement>('[data-drag-overlay="true"]');
 
-		const commit = store.getState().commitDrag();
-		const target = boardElement.current?.querySelector<HTMLElement>(
-			`[data-card-id="${CSS.escape(active.cardId)}"]`,
-		);
-		animateDrop(overlay, target ?? null);
-		if (!commit) return;
-		const intent = commit.statusIntent;
-		if (!intent) {
-			onCardRankChange(commit.cardId, store.getState().board);
-			return;
-		}
+		const intent = store.getState().commitDrag();
+		if (!intent) return;
 
 		void mutationService
 			.moveCard(intent)
@@ -167,7 +188,6 @@ export function PremiumKanbanBoard({
 				store
 					.getState()
 					.markMutationSucceeded(intent.filePath, intent.operationId, receipt.mtime);
-				onCardRankChange(commit.cardId, store.getState().board);
 			})
 			.catch((error: unknown) => {
 				const message = error instanceof Error ? error.message : String(error);
@@ -240,7 +260,11 @@ export function PremiumKanbanBoard({
 						</button>
 					</div>
 				</div>
-				<DragOverlay dropAnimation={null}>
+				<DragOverlay
+					className="premium-kanban-drag-overlay"
+					dropAnimation={null}
+					modifiers={dragOverlayModifiers}
+				>
 					{activeCard ? <CardVisual card={activeCard} overlay /> : null}
 					{activeColumn ? (
 						<div className="premium-kanban-column-overlay">{activeColumn.label}</div>

@@ -4,7 +4,6 @@ import type {
 	ActiveColumnDrag,
 	BoardColumn,
 	BoardSnapshot,
-	CardDropCommit,
 	MoveIntent,
 	PendingMove,
 } from '../model/types';
@@ -43,7 +42,6 @@ function cardsAreEqual(
 		previous.mtime !== incoming.mtime ||
 		previous.columnId !== incoming.columnId ||
 		previous.status !== incoming.status ||
-		previous.rank !== incoming.rank ||
 		previous.fields.length !== incoming.fields.length
 	) {
 		return false;
@@ -87,24 +85,14 @@ function reuseStableRecords(previous: BoardSnapshot, incoming: BoardSnapshot): B
 	return { ...incoming, cards, columns };
 }
 
-function moveCard(
-	snapshot: BoardSnapshot,
-	cardId: string,
-	targetColumnId: string,
-	targetIndex: number,
-): BoardSnapshot {
+function moveCard(snapshot: BoardSnapshot, cardId: string, targetColumnId: string): BoardSnapshot {
 	const card = snapshot.cards[cardId];
 	const source = snapshot.columns.find((column) => column.cardIds.includes(cardId));
 	const target = findColumn(snapshot, targetColumnId);
-	if (!card || !source || !target) return snapshot;
+	if (!card || !source || !target || source.id === target.id) return snapshot;
 
-	const sourceIndex = source.cardIds.indexOf(cardId);
 	const nextSourceIds = source.cardIds.filter((candidate) => candidate !== cardId);
-	const nextTargetIds = source.id === target.id ? nextSourceIds : [...target.cardIds];
-	const adjustedIndex =
-		source.id === target.id && sourceIndex < targetIndex ? targetIndex - 1 : targetIndex;
-	const boundedIndex = Math.max(0, Math.min(adjustedIndex, nextTargetIds.length));
-	nextTargetIds.splice(boundedIndex, 0, cardId);
+	const nextTargetIds = [...target.cardIds, cardId];
 
 	const columns = snapshot.columns.map((column) => {
 		if (column.id === target.id) return { ...column, cardIds: nextTargetIds };
@@ -134,7 +122,7 @@ function applyPendingMoves(
 	for (const pending of Object.values(pendingMoves)) {
 		const target = findColumn(board, pending.toColumnId);
 		if (!target || !board.cards[pending.filePath]) continue;
-		board = moveCard(board, pending.filePath, target.id, target.cardIds.length);
+		board = moveCard(board, pending.filePath, target.id);
 	}
 	return board;
 }
@@ -163,9 +151,9 @@ export interface BoardStoreState {
 	pendingMoves: Record<string, PendingMove>;
 	applySnapshot: (snapshot: BoardSnapshot) => void;
 	startDrag: (cardId: string) => void;
-	previewMove: (cardId: string, columnId: string, index: number) => void;
+	previewMove: (cardId: string, columnId: string) => void;
 	cancelDrag: () => void;
-	commitDrag: () => CardDropCommit | null;
+	commitDrag: () => MoveIntent | null;
 	startColumnDrag: (columnId: string) => void;
 	previewColumnMove: (columnId: string, targetColumnId: string) => void;
 	cancelColumnDrag: () => void;
@@ -225,15 +213,14 @@ export function createBoardStore(initial = EMPTY_SNAPSHOT): StoreApi<BoardStoreS
 				activeDrag: {
 					cardId,
 					sourceColumnId: column.id,
-					sourceIndex: column.cardIds.indexOf(cardId),
 				},
 			});
 		},
 
-		previewMove: (cardId, columnId, index) => {
+		previewMove: (cardId, columnId) => {
 			const current = get();
 			if (current.activeDrag?.cardId !== cardId) return;
-			set({ board: moveCard(current.board, cardId, columnId, index) });
+			set({ board: moveCard(current.board, cardId, columnId) });
 		},
 
 		cancelDrag: () => {
@@ -255,9 +242,8 @@ export function createBoardStore(initial = EMPTY_SNAPSHOT): StoreApi<BoardStoreS
 			const targetColumn = card ? findColumn(current.board, card.columnId) : undefined;
 			if (!card || !sourceColumn || !targetColumn) return null;
 
-			const targetIndex = targetColumn.cardIds.indexOf(active.cardId);
 			set({ activeDrag: null });
-			if (sourceColumn.id === targetColumn.id && active.sourceIndex === targetIndex) {
+			if (sourceColumn.id === targetColumn.id) {
 				set({
 					board: applyPendingMoves(
 						cloneSnapshot(current.confirmed),
@@ -267,37 +253,28 @@ export function createBoardStore(initial = EMPTY_SNAPSHOT): StoreApi<BoardStoreS
 				return null;
 			}
 
-			let statusIntent: MoveIntent | null = null;
-			if (sourceColumn.id !== targetColumn.id) {
-				statusIntent = {
-					operationId: crypto.randomUUID(),
-					filePath: card.path,
-					title: card.title,
-					propertyName: property.name,
-					fromColumnId: sourceColumn.id,
-					fromValue: sourceColumn.value,
-					toColumnId: targetColumn.id,
-					toValue: targetColumn.value,
-				};
-				set({
-					pendingMoves: {
-						...current.pendingMoves,
-						[card.id]: {
-							...statusIntent,
-							phase: 'writing',
-							writeMtime: null,
-						},
-					},
-				});
-			}
-
-			return {
-				cardId: card.id,
+			const statusIntent: MoveIntent = {
+				operationId: crypto.randomUUID(),
+				filePath: card.path,
+				title: card.title,
+				propertyName: property.name,
 				fromColumnId: sourceColumn.id,
+				fromValue: sourceColumn.value,
 				toColumnId: targetColumn.id,
-				toIndex: targetIndex,
-				statusIntent,
+				toValue: targetColumn.value,
 			};
+			set({
+				pendingMoves: {
+					...current.pendingMoves,
+					[card.id]: {
+						...statusIntent,
+						phase: 'writing',
+						writeMtime: null,
+					},
+				},
+			});
+
+			return statusIntent;
 		},
 
 		startColumnDrag: (columnId) => {
@@ -356,11 +333,7 @@ export function createBoardStore(initial = EMPTY_SNAPSHOT): StoreApi<BoardStoreS
 
 			const pendingMoves = { ...current.pendingMoves };
 			delete pendingMoves[cardId];
-			let board = applyPendingMoves(cloneSnapshot(current.confirmed), pendingMoves);
-			const rollbackColumn = findColumn(board, pending.fromColumnId);
-			if (rollbackColumn && board.cards[cardId]) {
-				board = moveCard(board, cardId, rollbackColumn.id, rollbackColumn.cardIds.length);
-			}
+			const board = applyPendingMoves(cloneSnapshot(current.confirmed), pendingMoves);
 			set({ board, pendingMoves, activeDrag: null });
 		},
 	}));

@@ -37,7 +37,7 @@ plugins**. The repository's README contains the complete vault and Bases setup.
 Keep these layers separate:
 
 1. `src/bases/` normalizes Bases results and view configuration.
-2. `src/board/` owns grouping, ranks, drag state, and optimistic state.
+2. `src/board/` owns grouping, drag state, and optimistic state.
 3. `src/mutations/` performs serialized, property-specific Markdown mutations.
 4. `src/ui/` renders and animates the React interface.
 

@@ -110,7 +110,7 @@ describe('normalizeBasesData', () => {
 		expect(adapterInternals.parseColumnOrder([' Today ', 42, 'Today', ''])).toEqual(['Today']);
 	});
 
-	it('applies per-view ranks and color overrides', () => {
+	it('preserves the Bases sort order and applies color overrides', () => {
 		const first = entry('todos/First.md', {
 			'note.Status': 'Today',
 			'note.source': 'fixture',
@@ -122,7 +122,6 @@ describe('normalizeBasesData', () => {
 		const result = normalizeBasesData({
 			allProperties: ['note.Status', 'note.source'],
 			config: config('Today', {
-				cardRanks: '{"todos/First.md":"a1","todos/Second.md":"a0"}',
 				columnColors: '{"Today":"#123456"}',
 			}),
 			data: {
@@ -133,7 +132,7 @@ describe('normalizeBasesData', () => {
 			revision: 1,
 		});
 
-		expect(result.columns[0]?.cardIds).toEqual(['todos/Second.md', 'todos/First.md']);
+		expect(result.columns[0]?.cardIds).toEqual(['todos/First.md', 'todos/Second.md']);
 		expect(result.columns[0]?.color).toBe('#123456');
 	});
 });

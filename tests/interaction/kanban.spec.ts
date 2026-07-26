@@ -17,6 +17,31 @@ async function dragAlphaToProgress(page: Page) {
 	await page.mouse.up();
 }
 
+test('shows one pointer-aligned card while dragging', async ({ page }) => {
+	await page.goto('/');
+	const source = page.locator('[data-card-id="todos/Alpha.md"]');
+	const sourceBox = await source.boundingBox();
+	if (!sourceBox) throw new Error('Expected visible card geometry');
+
+	const pointerX = sourceBox.x + sourceBox.width / 2;
+	const pointerY = sourceBox.y + 24;
+	await page.mouse.move(pointerX, pointerY);
+	await page.mouse.down();
+	await page.mouse.move(pointerX + 12, pointerY + 12, { steps: 4 });
+
+	const overlay = page.locator('[data-drag-overlay="true"]');
+	await expect(overlay).toHaveCount(1);
+	await expect(overlay).toBeVisible();
+	await expect(source.locator('.premium-kanban-card')).toHaveCSS('visibility', 'hidden');
+
+	const overlayBox = await overlay.boundingBox();
+	if (!overlayBox) throw new Error('Expected visible drag-overlay geometry');
+	expect(Math.abs(overlayBox.x + overlayBox.width / 2 - (pointerX + 12))).toBeLessThan(4);
+	expect(overlayBox.y).toBeGreaterThan(pointerY + 18);
+
+	await page.mouse.up();
+});
+
 test('moves a card optimistically and reconciles after persistence', async ({ page }) => {
 	await page.goto('/');
 	await dragAlphaToProgress(page);
@@ -25,9 +50,6 @@ test('moves a card optimistically and reconciles after persistence', async ({ pa
 	await expect(destination.getByText('Alpha task')).toBeVisible();
 	await expect(destination.getByText('Saving…')).toBeVisible();
 	await expect(destination.getByText('Saving…')).toBeHidden({ timeout: 2000 });
-	await expect
-		.poll(() => page.locator('body').getAttribute('data-ranked-card'))
-		.toBe('todos/Alpha.md');
 });
 
 test('rolls a failed write back to the source column', async ({ page }) => {
@@ -42,7 +64,6 @@ test('rolls a failed write back to the source column', async ({ page }) => {
 	await expect
 		.poll(() => page.locator('body').getAttribute('data-error'))
 		.toContain('Synthetic write failure');
-	await expect(page.locator('body')).not.toHaveAttribute('data-ranked-card');
 });
 
 test('exposes task creation and the column color control', async ({ page }) => {
@@ -53,7 +74,9 @@ test('exposes task creation and the column color control', async ({ page }) => {
 		.poll(() => page.locator('body').getAttribute('data-add-card'))
 		.toBe('status:Today');
 
-	await page.getByRole('button', { name: 'Configure Today color' }).click();
+	const colorControl = page.getByRole('button', { name: 'Configure Today color' });
+	await expect(colorControl).toHaveCSS('background-color', 'rgb(214, 161, 0)');
+	await colorControl.click();
 	await expect
 		.poll(() => page.locator('body').getAttribute('data-column-color'))
 		.toBe('status:Today');
