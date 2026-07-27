@@ -45,8 +45,8 @@ describe('board state', () => {
 		const store = createBoardStore(snapshot('Today'));
 
 		store.getState().startDrag('todos/Task.md');
-		store.getState().previewMove('todos/Task.md', 'status:In%20Progress');
-		const intent = store.getState().commitDrag();
+		expect(store.getState().board.cards['todos/Task.md']?.status).toBe('Today');
+		const intent = store.getState().commitDrag('status:In%20Progress');
 
 		expect(intent?.toValue).toBe('In Progress');
 		expect(store.getState().board.cards['todos/Task.md']?.status).toBe('In Progress');
@@ -65,8 +65,7 @@ describe('board state', () => {
 		const store = createBoardStore(snapshot('Today'));
 
 		store.getState().startDrag('todos/Task.md');
-		store.getState().previewMove('todos/Task.md', 'status:In%20Progress');
-		store.getState().commitDrag();
+		store.getState().commitDrag('status:In%20Progress');
 		store.getState().markMutationFailed('todos/Task.md', 'operation-2');
 
 		expect(store.getState().board.cards['todos/Task.md']?.status).toBe('Today');
@@ -79,8 +78,7 @@ describe('board state', () => {
 		const store = createBoardStore(snapshot('Today'));
 
 		store.getState().startDrag('todos/Task.md');
-		store.getState().previewMove('todos/Task.md', 'status:In%20Progress');
-		store.getState().commitDrag();
+		store.getState().commitDrag('status:In%20Progress');
 		store.getState().applySnapshot(snapshot('Today', 1));
 
 		expect(store.getState().board.cards['todos/Task.md']?.status).toBe('In Progress');
@@ -103,9 +101,8 @@ describe('board state', () => {
 		const store = createBoardStore(initial);
 
 		store.getState().startDrag('todos/Task.md');
-		store.getState().previewMove('todos/Task.md', 'status:Today');
 
-		expect(store.getState().commitDrag()).toBeNull();
+		expect(store.getState().commitDrag('status:Today')).toBeNull();
 		expect(store.getState().board.columns[0]?.cardIds).toEqual([
 			'todos/Task.md',
 			'todos/Other.md',

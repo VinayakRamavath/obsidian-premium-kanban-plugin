@@ -20,7 +20,7 @@ This repository currently implements the interaction-quality proof only:
 - Uses the Base's filters, grouping, property order, sorting, and `columnOrder`.
 - Renders filename-based task cards with the selected Base properties.
 - Moves cards between Status columns with pointer, trackpad, basic touch, and keyboard sensors.
-- Uses dnd-kit for drag geometry and GSAP Flip for card displacement and rollback motion.
+- Uses dnd-kit for card drag geometry and GSAP Flip for column reordering.
 - Creates tasks directly in a Status column using the Base's file-creation rules.
 - Adds empty Status columns and reorders columns with a dedicated drag handle.
 - Keeps cards in the order produced by the Base's configured sort.
@@ -148,8 +148,7 @@ Obsidian release artifacts:
 
 The Playwright harness uses the production React board, dnd-kit sensors, GSAP animation code, and
 a controlled fake mutation service. It verifies pointer dragging, optimistic placement,
-successful reconciliation, and animated failure rollback without needing to automate Obsidian
-itself.
+successful reconciliation, and failure rollback without needing to automate Obsidian itself.
 
 ## Data-safety behavior
 
@@ -193,7 +192,7 @@ Before expanding the product scope, compare this view directly with the native B
 the disposable vault:
 
 - Pointer tracking should remain attached to the cursor.
-- Nearby cards should make space without abrupt jumps.
+- Other cards should remain still until the dragged card is dropped.
 - Column widths should remain stable.
 - The destination should remain visually explicit.
 - Markdown persistence must not interrupt pointer tracking or the destination transition.

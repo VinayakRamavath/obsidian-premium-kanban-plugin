@@ -17,28 +17,55 @@ async function dragAlphaToProgress(page: Page) {
 	await page.mouse.up();
 }
 
-test('shows one pointer-aligned card while dragging', async ({ page }) => {
+test('keeps one pointer-aligned card and stationary lists while dragging', async ({ page }) => {
 	await page.goto('/');
 	const source = page.locator('[data-card-id="todos/Alpha.md"]');
 	const sourceBox = await source.boundingBox();
-	if (!sourceBox) throw new Error('Expected visible card geometry');
+	const destination = page.locator('[data-column-id="status:In%20Progress"]');
+	const destinationBox = await destination.boundingBox();
+	if (!sourceBox || !destinationBox) throw new Error('Expected visible drag geometry');
 
 	const pointerX = sourceBox.x + sourceBox.width / 2;
 	const pointerY = sourceBox.y + 24;
 	await page.mouse.move(pointerX, pointerY);
 	await page.mouse.down();
-	await page.mouse.move(pointerX + 12, pointerY + 12, { steps: 4 });
 
 	const overlay = page.locator('[data-drag-overlay="true"]');
-	await expect(overlay).toHaveCount(1);
-	await expect(overlay).toBeVisible();
+	const positions = [
+		{ x: pointerX + 12, y: pointerY + 12 },
+		{ x: pointerX + 70, y: pointerY + 45 },
+		{ x: destinationBox.x + destinationBox.width / 2, y: destinationBox.y + 110 },
+	];
+	const offsets: Array<{ x: number; y: number }> = [];
+	for (const position of positions) {
+		await page.mouse.move(position.x, position.y, { steps: 5 });
+		await expect(overlay).toHaveCount(1);
+		await expect(overlay).toBeVisible();
+		const overlayBox = await overlay.boundingBox();
+		if (!overlayBox) throw new Error('Expected visible drag-overlay geometry');
+		offsets.push({
+			x: overlayBox.x + overlayBox.width / 2 - position.x,
+			y: overlayBox.y - position.y,
+		});
+	}
+
 	await expect(source.locator('.premium-kanban-card')).toHaveCSS('visibility', 'hidden');
+	await expect(
+		page.locator('[data-column-id="status:Today"] [data-card-id="todos/Alpha.md"]'),
+	).toHaveCount(1);
+	await expect(
+		page.locator('[data-column-id="status:In%20Progress"] [data-card-id="todos/Alpha.md"]'),
+	).toHaveCount(0);
+	expect(
+		Math.max(...offsets.map(({ x }) => x)) - Math.min(...offsets.map(({ x }) => x)),
+	).toBeLessThan(2);
+	expect(
+		Math.max(...offsets.map(({ y }) => y)) - Math.min(...offsets.map(({ y }) => y)),
+	).toBeLessThan(2);
+	expect(Math.abs(offsets[0]?.x ?? Number.POSITIVE_INFINITY)).toBeLessThan(4);
+	expect(offsets[0]?.y).toBeGreaterThan(8);
 
-	const overlayBox = await overlay.boundingBox();
-	if (!overlayBox) throw new Error('Expected visible drag-overlay geometry');
-	expect(Math.abs(overlayBox.x + overlayBox.width / 2 - (pointerX + 12))).toBeLessThan(4);
-	expect(overlayBox.y).toBeGreaterThan(pointerY + 18);
-
+	await page.mouse.move(pointerX, pointerY, { steps: 5 });
 	await page.mouse.up();
 });
 

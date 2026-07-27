@@ -74,7 +74,6 @@ export function BoardCard({ card, columnId, isDragging, pending, onOpen }: Board
 			aria-label={`${card.title}, draggable task`}
 			className="premium-kanban-card-shell"
 			data-card-id={card.id}
-			data-flip-card
 			onClick={(event) => {
 				if (!isDragging) onOpen(card.path, event);
 			}}

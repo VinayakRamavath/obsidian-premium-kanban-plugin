@@ -151,9 +151,8 @@ export interface BoardStoreState {
 	pendingMoves: Record<string, PendingMove>;
 	applySnapshot: (snapshot: BoardSnapshot) => void;
 	startDrag: (cardId: string) => void;
-	previewMove: (cardId: string, columnId: string) => void;
 	cancelDrag: () => void;
-	commitDrag: () => MoveIntent | null;
+	commitDrag: (targetColumnId: string | null) => MoveIntent | null;
 	startColumnDrag: (columnId: string) => void;
 	previewColumnMove: (columnId: string, targetColumnId: string) => void;
 	cancelColumnDrag: () => void;
@@ -217,39 +216,24 @@ export function createBoardStore(initial = EMPTY_SNAPSHOT): StoreApi<BoardStoreS
 			});
 		},
 
-		previewMove: (cardId, columnId) => {
-			const current = get();
-			if (current.activeDrag?.cardId !== cardId) return;
-			set({ board: moveCard(current.board, cardId, columnId) });
-		},
-
 		cancelDrag: () => {
-			const current = get();
-			set({
-				activeDrag: null,
-				board: applyPendingMoves(cloneSnapshot(current.confirmed), current.pendingMoves),
-			});
+			set({ activeDrag: null });
 		},
 
-		commitDrag: () => {
+		commitDrag: (targetColumnId) => {
 			const current = get();
 			const active = current.activeDrag;
 			const property = current.board.groupProperty;
-			if (!active || !property) return null;
+			if (!active || !property || !targetColumnId) {
+				set({ activeDrag: null });
+				return null;
+			}
 
 			const card = current.board.cards[active.cardId];
 			const sourceColumn = findColumn(current.board, active.sourceColumnId);
-			const targetColumn = card ? findColumn(current.board, card.columnId) : undefined;
-			if (!card || !sourceColumn || !targetColumn) return null;
-
-			set({ activeDrag: null });
-			if (sourceColumn.id === targetColumn.id) {
-				set({
-					board: applyPendingMoves(
-						cloneSnapshot(current.confirmed),
-						current.pendingMoves,
-					),
-				});
+			const targetColumn = findColumn(current.board, targetColumnId);
+			if (!card || !sourceColumn || !targetColumn || sourceColumn.id === targetColumn.id) {
+				set({ activeDrag: null });
 				return null;
 			}
 
@@ -264,6 +248,8 @@ export function createBoardStore(initial = EMPTY_SNAPSHOT): StoreApi<BoardStoreS
 				toValue: targetColumn.value,
 			};
 			set({
+				activeDrag: null,
+				board: moveCard(current.board, card.id, targetColumn.id),
 				pendingMoves: {
 					...current.pendingMoves,
 					[card.id]: {

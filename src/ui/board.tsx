@@ -14,12 +14,12 @@ import {
 	type DragStartEvent,
 	type Modifier,
 } from '@dnd-kit/core';
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useStore } from 'zustand';
 import type { StoreApi } from 'zustand/vanilla';
 import type { BoardStoreState } from '../board/board-state';
 import type { MutationService } from '../mutations/mutation-service';
-import { animateBoardChange, animateColumnChange } from './animation';
+import { animateColumnChange } from './animation';
 import { CardVisual } from './card';
 import { BoardColumn } from './column';
 
@@ -65,24 +65,22 @@ const placeOverlayBelowPointer: Modifier = ({
 	activatorEvent,
 	active,
 	activeNodeRect,
-	overlayNodeRect,
 	transform,
 }) => {
 	if (active?.data.current?.type !== 'card') return transform;
 	const pointer = activatorCoordinates(activatorEvent);
 	if (!pointer || !activeNodeRect) return transform;
 
-	const overlayWidth = overlayNodeRect?.width ?? activeNodeRect.width;
 	return {
 		...transform,
-		x: transform.x + pointer.x - activeNodeRect.left - overlayWidth / 2,
+		x: transform.x + pointer.x - activeNodeRect.left - activeNodeRect.width / 2,
 		y: transform.y + pointer.y - activeNodeRect.top + 12,
 	};
 };
 
 const dragOverlayModifiers = [placeOverlayBelowPointer];
 
-function targetColumnFromEvent(event: DragOverEvent): string | null {
+function targetColumnFromEvent(event: Pick<DragOverEvent, 'over'>): string | null {
 	const over = event.over;
 	if (!over) return null;
 	const data = over.data.current;
@@ -104,7 +102,7 @@ export function PremiumKanbanBoard({
 	const activeDrag = useStore(store, (state) => state.activeDrag);
 	const activeColumnDrag = useStore(store, (state) => state.activeColumnDrag);
 	const boardElement = useRef<HTMLDivElement>(null);
-	const lastPreview = useRef<string | null>(null);
+	const [dragTargetColumnId, setDragTargetColumnId] = useState<string | null>(null);
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
 		useSensor(TouchSensor, {
@@ -113,7 +111,6 @@ export function PremiumKanbanBoard({
 		useSensor(KeyboardSensor),
 	);
 	const activeCard = activeDrag ? board.cards[activeDrag.cardId] : undefined;
-	const destinationColumnId = activeCard?.columnId ?? null;
 	const activeColumn = activeColumnDrag
 		? board.columns.find((column) => column.id === activeColumnDrag.columnId)
 		: undefined;
@@ -127,7 +124,7 @@ export function PremiumKanbanBoard({
 		}
 		const cardId = event.active.data.current?.cardId;
 		if (typeof cardId !== 'string') return;
-		lastPreview.current = null;
+		setDragTargetColumnId(null);
 		store.getState().startDrag(cardId);
 	};
 
@@ -149,37 +146,25 @@ export function PremiumKanbanBoard({
 		}
 		const cardId = event.active.data.current?.cardId;
 		const targetColumnId = targetColumnFromEvent(event);
-		if (typeof cardId !== 'string' || !targetColumnId) return;
-
-		const current = store.getState();
-		const card = current.board.cards[cardId];
-		if (!card || card.columnId === targetColumnId) return;
-		if (lastPreview.current === targetColumnId) return;
-		lastPreview.current = targetColumnId;
-
-		animateBoardChange(
-			boardElement.current,
-			[card.columnId, targetColumnId],
-			() => store.getState().previewMove(cardId, targetColumnId),
-			'move',
+		const active = store.getState().activeDrag;
+		if (typeof cardId !== 'string' || active?.cardId !== cardId) {
+			setDragTargetColumnId(null);
+			return;
+		}
+		setDragTargetColumnId(
+			targetColumnId && targetColumnId !== active.sourceColumnId ? targetColumnId : null,
 		);
 	};
 
 	const onDragEnd = (event: DragEndEvent) => {
-		lastPreview.current = null;
 		if (event.active.data.current?.type === 'column-drag') {
 			const order = store.getState().commitColumnDrag();
 			if (order) onColumnOrderChange(order);
 			return;
 		}
-		const before = store.getState();
-		const active = before.activeDrag;
-		if (!active) return;
-		const cardBeforeCommit = before.board.cards[active.cardId];
-		const sourceColumnId = active.sourceColumnId;
-		const targetColumnId = cardBeforeCommit?.columnId ?? sourceColumnId;
-
-		const intent = store.getState().commitDrag();
+		const targetColumnId = targetColumnFromEvent(event);
+		setDragTargetColumnId(null);
+		const intent = store.getState().commitDrag(targetColumnId);
 		if (!intent) return;
 
 		void mutationService
@@ -191,12 +176,7 @@ export function PremiumKanbanBoard({
 			})
 			.catch((error: unknown) => {
 				const message = error instanceof Error ? error.message : String(error);
-				animateBoardChange(
-					boardElement.current,
-					[sourceColumnId, targetColumnId],
-					() => store.getState().markMutationFailed(intent.filePath, intent.operationId),
-					'rollback',
-				);
+				store.getState().markMutationFailed(intent.filePath, intent.operationId);
 				onError(`Could not move “${intent.title}”: ${message}`);
 			});
 	};
@@ -228,6 +208,7 @@ export function PremiumKanbanBoard({
 					if (event.active.data.current?.type === 'column-drag') {
 						store.getState().cancelColumnDrag();
 					} else {
+						setDragTargetColumnId(null);
 						store.getState().cancelDrag();
 					}
 				}}
@@ -246,7 +227,7 @@ export function PremiumKanbanBoard({
 					{board.columns.map((column) => (
 						<BoardColumn
 							columnId={column.id}
-							isDestination={activeDrag !== null && destinationColumnId === column.id}
+							isDestination={activeDrag !== null && dragTargetColumnId === column.id}
 							key={column.id}
 							onAddCard={onAddCard}
 							onConfigureColumnColor={onConfigureColumnColor}
@@ -272,9 +253,9 @@ export function PremiumKanbanBoard({
 				</DragOverlay>
 			</DndContext>
 			<span className="premium-kanban-sr-only" aria-live="polite">
-				{activeDrag && destinationColumnId
+				{activeDrag && dragTargetColumnId
 					? `Moving ${activeCard?.title ?? 'task'} to ${
-							board.columns.find((column) => column.id === destinationColumnId)
+							board.columns.find((column) => column.id === dragTargetColumnId)
 								?.label ?? ''
 						}`
 					: ''}

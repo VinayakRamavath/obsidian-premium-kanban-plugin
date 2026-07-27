@@ -226,8 +226,7 @@
 	border-color: color-mix(in srgb, var(--interactive-accent) 54%, transparent);
 	box-shadow: var(--pk-shadow-drag);
 	cursor: grabbing;
-	opacity: 0.98;
-	transform: scale(1.01);
+	opacity: 1;
 }
 
 .premium-kanban-card.is-pending::after {
