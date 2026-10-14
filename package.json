@@ -1,6 +1,6 @@
 {
 	"name": "premium-kanban",
-	"version": "0.2.2",
+	"version": "0.2.3",
 	"description": "A polished, Markdown-native Kanban view for Obsidian Bases.",
 	"type": "module",
 	"main": "main.js",
