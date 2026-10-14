@@ -102,7 +102,9 @@ createRoot(rootElement).render(
 			onError={(message) => {
 				document.body.dataset.error = message;
 			}}
-			onOpenCard={() => undefined}
+			onOpenCard={(path) => {
+				document.body.dataset.openCard = path;
+			}}
 			store={store}
 		/>
 	</React.StrictMode>,

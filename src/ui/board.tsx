@@ -13,6 +13,7 @@ import {
 	type DragOverEvent,
 	type DragStartEvent,
 	type Modifier,
+	type PointerSensorOptions,
 } from '@dnd-kit/core';
 import { useMemo, useRef, useState } from 'react';
 import { useStore } from 'zustand';
@@ -32,6 +33,21 @@ interface PremiumKanbanBoardProps {
 	onAddColumn: () => void;
 	onColumnOrderChange: (labels: string[]) => void;
 	onConfigureColumnColor: (columnId: string) => void;
+}
+
+// Fingers must press and hold before a card lifts, so a swipe across the board
+// scrolls it instead of grabbing whatever card the swipe started on.
+const TOUCH_HOLD_DELAY_MS = 500;
+const TOUCH_HOLD_TOLERANCE_PX = 5;
+
+// Mobile browsers fire pointer events for touches before touch events, so the
+// pointer sensor would otherwise claim every swipe. Leave touches to TouchSensor.
+class MouseAndPenSensor extends PointerSensor {
+	static override activators = PointerSensor.activators.map((activator) => ({
+		...activator,
+		handler: (event: React.PointerEvent, options: PointerSensorOptions) =>
+			event.nativeEvent.pointerType !== 'touch' && activator.handler(event, options),
+	}));
 }
 
 const collisionDetection: CollisionDetection = (args) => {
@@ -104,9 +120,12 @@ export function PremiumKanbanBoard({
 	const boardElement = useRef<HTMLDivElement>(null);
 	const [dragTargetColumnId, setDragTargetColumnId] = useState<string | null>(null);
 	const sensors = useSensors(
-		useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+		useSensor(MouseAndPenSensor, { activationConstraint: { distance: 6 } }),
 		useSensor(TouchSensor, {
-			activationConstraint: { delay: 180, tolerance: 8 },
+			activationConstraint: {
+				delay: TOUCH_HOLD_DELAY_MS,
+				tolerance: TOUCH_HOLD_TOLERANCE_PX,
+			},
 		}),
 		useSensor(KeyboardSensor),
 	);
