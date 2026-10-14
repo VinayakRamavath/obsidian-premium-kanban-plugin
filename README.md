@@ -54,6 +54,13 @@ public alpha:
 4. Copy the three downloaded files into that directory.
 5. Reload Obsidian and enable **Premium Kanban** under **Settings → Community plugins**.
 
+To update a manual install, replace those three files with the ones from the new release and reload
+Obsidian. BRAT does not track manual installs.
+
+> **Maintainer note:** the maintainer's own vault uses this manual installation, not BRAT. After
+> publishing a release, copy its `main.js`, `manifest.json`, and `styles.css` into the vault's
+> `.obsidian/plugins/premium-kanban/` folder and reload Obsidian.
+
 The plugin requires Obsidian 1.10.0 or newer with the Bases core plugin enabled.
 
 ## Configure a Base
