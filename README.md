@@ -19,7 +19,7 @@ This repository currently implements the interaction-quality proof only:
 - Registers the custom Bases view type `premium-kanban`.
 - Uses the Base's filters, grouping, property order, sorting, and `columnOrder`.
 - Renders filename-based task cards with the selected Base properties.
-- Moves cards between Status columns with pointer, trackpad, basic touch, and keyboard sensors.
+- Moves cards between Status columns with pointer, trackpad, touch (press and hold to lift a card, so swipes scroll the board), and keyboard sensors.
 - Uses dnd-kit for card drag geometry and GSAP Flip for column reordering.
 - Creates tasks directly in a Status column using the Base's file-creation rules.
 - Adds empty Status columns and reorders columns with a dedicated drag handle.

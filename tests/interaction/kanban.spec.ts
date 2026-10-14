@@ -131,3 +131,88 @@ test('reorders columns with the drag handle', async ({ page }) => {
 		.poll(() => page.locator('body').getAttribute('data-column-order'))
 		.toContain('In Progress,Completed,Today');
 });
+
+test.describe('touch', () => {
+	test.use({ hasTouch: true });
+
+	async function touchSession(page: Page) {
+		const cdp = await page.context().newCDPSession(page);
+		return {
+			start: (x: number, y: number) =>
+				cdp.send('Input.dispatchTouchEvent', {
+					type: 'touchStart',
+					touchPoints: [{ x, y }],
+				}),
+			move: (x: number, y: number) =>
+				cdp.send('Input.dispatchTouchEvent', {
+					type: 'touchMove',
+					touchPoints: [{ x, y }],
+				}),
+			end: () => cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }),
+		};
+	}
+
+	test('scrolls the board instead of lifting a card on a quick swipe', async ({ page }) => {
+		await page.setViewportSize({ width: 390, height: 800 });
+		await page.goto('/');
+		// The harness has no .premium-kanban-view wrapper, so give columns their real width.
+		await page.addStyleTag({ content: '#root { --pk-column-width: 300px; }' });
+		const source = page.locator('[data-card-id="todos/Alpha.md"]');
+		const sourceBox = await source.boundingBox();
+		if (!sourceBox) throw new Error('Expected visible card geometry');
+
+		const touch = await touchSession(page);
+		const x = sourceBox.x + sourceBox.width / 2;
+		const y = sourceBox.y + sourceBox.height / 2;
+		await touch.start(x, y);
+		for (let step = 1; step <= 10; step++) {
+			await touch.move(x - step * 20, y);
+		}
+		await expect(page.locator('[data-drag-overlay="true"]')).toHaveCount(0);
+		await touch.end();
+
+		await expect
+			.poll(async () => (await source.boundingBox())?.x ?? sourceBox.x)
+			.toBeLessThan(sourceBox.x - 50);
+		await expect(
+			page.locator('[data-column-id="status:Today"] [data-card-id="todos/Alpha.md"]'),
+		).toHaveCount(1);
+	});
+
+	test('moves a card after press and hold', async ({ page }) => {
+		await page.goto('/');
+		const sourceBox = await page.locator('[data-card-id="todos/Alpha.md"]').boundingBox();
+		const destinationBox = await page
+			.locator('[data-column-id="status:In%20Progress"]')
+			.boundingBox();
+		if (!sourceBox || !destinationBox) throw new Error('Expected visible drag geometry');
+
+		const touch = await touchSession(page);
+		const x = sourceBox.x + sourceBox.width / 2;
+		const y = sourceBox.y + sourceBox.height / 2;
+		await touch.start(x, y);
+		await page.waitForTimeout(250);
+		await expect(page.locator('[data-drag-overlay="true"]')).toHaveCount(0);
+		await page.waitForTimeout(400);
+
+		const targetX = destinationBox.x + destinationBox.width / 2;
+		const targetY = destinationBox.y + destinationBox.height - 40;
+		for (let step = 1; step <= 14; step++) {
+			await touch.move(x + ((targetX - x) * step) / 14, y + ((targetY - y) * step) / 14);
+		}
+		await expect(page.locator('[data-drag-overlay="true"]')).toBeVisible();
+		await touch.end();
+
+		await expect(
+			page.locator('[data-column-id="status:In%20Progress"]').getByText('Alpha task'),
+		).toBeVisible();
+	});
+
+	test('opens a card on tap', async ({ page }) => {
+		await page.goto('/');
+		await page.getByText('Alpha task').tap();
+		await expect
+			.poll(() => page.locator('body').getAttribute('data-open-card'))
+			.toBe('todos/Alpha.md');
+	});
+});

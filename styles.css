@@ -179,6 +179,9 @@
 	outline: none;
 	position: relative;
 	touch-action: manipulation;
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	user-select: none;
 }
 
 .premium-kanban-card-shell:active {
